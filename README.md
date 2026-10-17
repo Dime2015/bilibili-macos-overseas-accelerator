@@ -8,6 +8,8 @@
 
 海外用户会被分配到海外节点（腾讯云 `cosov`、阿里云 `aliov`、Akamai 等）。实测（日本，家宽约 70 Mbps）：
 
+![实测下载速度：海外节点 cosov 未缓存片段只有 0.6 Mbps，国内节点 08c 约 50 Mbps](docs/speed.svg)
+
 | 节点 | 已缓存的片段 | 未缓存的片段 |
 |---|---|---|
 | `upos-sz-mirrorcosov`（海外，默认） | ~40 Mbps | **0.3～1 Mbps** |
@@ -17,8 +19,10 @@
 
 ## 用法
 
-1. 下载源码后运行：
+1. 下载源码并构建：
    ```bash
+   git clone https://github.com/Dime2015/bilibili-macos-overseas-accelerator.git
+   cd bilibili-macos-overseas-accelerator
    ./build.sh
    ```
    需要 Xcode Command Line Tools（`xcode-select --install`）。构建完成后会安装到 `~/Applications/B站加速.app`。
@@ -27,6 +31,8 @@
    - 查看状态（已转到国内节点多少次）
    - 切换节点：`08c` / `hwb` / `hw` / 暂停（切换立即生效，不用重启）
    - 重启哔哩哔哩
+
+   <img src="docs/settings.png" width="360" alt="B站加速 设置窗口：状态、节点选择、重启按钮">
 4. 菜单栏也有一个 ⚡ 图标，功能相同（有刘海的 MacBook 上可能被挤到看不见）。
 5. 关闭哔哩哔哩时 B站加速 会自动退出。
 
@@ -40,6 +46,10 @@
 4. 设置保存在 `~/Library/Application Support/BiliCDN/config.json`，hook 会监听这个文件；统计数据写在同目录的 `stats.json`。
 
 只有通过 B站加速 启动的哔哩哔哩才会生效。直接打开哔哩哔哩就是原样。
+
+注意：哔哩哔哩播放器的「统计信息」里 Video Host 仍会显示海外节点，因为播放器不知道请求被转走了。要看 Video Speed 是否提高，或者看设置窗口里的转发次数。
+
+README 里的设置窗口截图用 `build/B站加速.app/Contents/MacOS/BiliCDN --snapshot docs/settings.png` 生成。
 
 ## 适用范围与限制
 

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 260" width="720" height="260" role="img" aria-labelledby="t d">
+<title id="t">海外节点与国内节点的实测下载速度</title>
+<desc id="d">同一个 4K 视频，单连接下载。cosov 海外节点：已缓存片段 42.8 Mbps，未缓存片段 0.6 Mbps。08c 国内节点：已缓存 49.1 Mbps，未缓存 49.7 Mbps。H.264 4K 约需 12 Mbps。</desc>
+<style>
+  svg { --bg:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --ink3:#8a8984; --grid:#e8e7e3; --s1:#2a78d6; --s2:#eb6834;
+         font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif; }
+  @media (prefers-color-scheme: dark) {
+    svg { --bg:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --ink3:#8f8e88; --grid:#33332f; --s1:#3987e5; --s2:#d95926; }
+  }
+  .bg { fill: var(--bg); }
+  .title { fill: var(--ink); font-size: 17px; font-weight: 600; }
+  .subtitle, .sub, .tick, .axis { fill: var(--ink3); font-size: 12px; }
+  .row { fill: var(--ink); font-size: 14px; font-weight: 600; }
+  .val, .leg { fill: var(--ink2); font-size: 12.5px; }
+  .grid { stroke: var(--grid); stroke-width: 1; }
+  .ref { stroke: var(--ink3); stroke-width: 1.5; stroke-dasharray: 4 4; }
+  .reflabel { fill: var(--ink2); font-size: 12px; }
+  .s1 { fill: var(--s1); } .s2 { fill: var(--s2); }
+</style>
+<rect class="bg" width="720" height="260" rx="12"/>
+<text class="title" x="24" y="34">实测下载速度：海外节点 vs 国内节点</text>
+<text class="subtitle" x="24" y="54">日本家宽（总带宽约 70 Mbps）· 同一个 4K 视频 · 单连接</text>
+<rect class="s1" x="440" y="62" width="12" height="12" rx="3"/><text class="leg" x="458" y="72">已缓存的片段</text>
+<rect class="s2" x="560" y="62" width="12" height="12" rx="3"/><text class="leg" x="578" y="72">未缓存的片段</text>
+<line class="grid" x1="210.0" y1="88" x2="210.0" y2="214"/><text class="tick" x="210.0" y="232" text-anchor="middle">0</text><line class="grid" x1="370.0" y1="88" x2="370.0" y2="214"/><text class="tick" x="370.0" y="232" text-anchor="middle">20</text><line class="grid" x1="530.0" y1="88" x2="530.0" y2="214"/><text class="tick" x="530.0" y="232" text-anchor="middle">40</text><line class="grid" x1="690.0" y1="88" x2="690.0" y2="214"/><text class="tick" x="690.0" y="232" text-anchor="middle">60</text>
+<line class="ref" x1="306.0" y1="84" x2="306.0" y2="214"/>
+<text class="reflabel" x="312.0" y="150">4K H.264 约需 12 Mbps</text>
+<text class="row" x="196" y="116" text-anchor="end">cosov · 海外节点</text><text class="sub" x="196" y="133" text-anchor="end">B 站默认分配</text><path class="s1" d="M210,100 H548.4 Q552.4,100 552.4,104 V114 Q552.4,118 548.4,118 H210 Z"><title>42.8 Mbps</title></path><text class="val" x="558.4" y="113">42.8 Mbps</text><path class="s2" d="M210,120 H210.8 Q214.8,120 214.8,124 V134 Q214.8,138 210.8,138 H210 Z"><title>0.6 Mbps</title></path><text class="val" x="220.8" y="133">0.6 Mbps</text><text class="row" x="196" y="182" text-anchor="end">08c · 国内节点</text><text class="sub" x="196" y="199" text-anchor="end">B站加速 转到这里</text><path class="s1" d="M210,166 H598.8 Q602.8,166 602.8,170 V180 Q602.8,184 598.8,184 H210 Z"><title>49.1 Mbps</title></path><text class="val" x="608.8" y="179">49.1 Mbps</text><path class="s2" d="M210,186 H603.6 Q607.6,186 607.6,190 V200 Q607.6,204 603.6,204 H210 Z"><title>49.7 Mbps</title></path><text class="val" x="613.6" y="199">49.7 Mbps</text>
+<text class="axis" x="450" y="250" text-anchor="middle">Mbps</text>
+</svg>
