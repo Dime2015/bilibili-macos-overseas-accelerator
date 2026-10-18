@@ -3,8 +3,6 @@
 // Lives in the menu bar while 哔哩哔哩 runs and quits with it.
 import AppKit
 import Foundation
-import SwiftUI
-import Combine
 
 let biliBundleID = "com.bilibili.bilibiliPC"
 let supportDir = FileManager.default.homeDirectoryForCurrentUser
@@ -122,7 +120,7 @@ func freePort() -> Int {
 
 // MARK: - App
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     var biliPID: pid_t?
     var lastError: String?
@@ -130,10 +128,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ note: Notification) {
         if !FileManager.default.fileExists(atPath: configURL.path) { writeConfig(readConfig()) }
         statusItem.button?.image = NSImage(systemSymbolName: "bolt.horizontal.circle", accessibilityDescription: "B站加速")
-        // The menu bar icon only opens the settings window (it may be hidden behind the notch,
-        // so the window is also reachable by opening B站加速 again).
-        statusItem.button?.target = self
-        statusItem.button?.action = #selector(showSettings)
+        let menu = NSMenu()
+        menu.delegate = self
+        statusItem.menu = menu
 
         NSWorkspace.shared.notificationCenter.addObserver(
             self, selector: #selector(appTerminated(_:)),
@@ -143,26 +140,48 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        // Clicking the launcher again while 哔哩哔哩 runs with the hook: open the settings window.
-        // (The menu bar icon can end up hidden behind the notch.) Otherwise (re)start 哔哩哔哩.
-        if hooked { showSettings() } else { Task { await startBili() } }
+        // Clicking the launcher again while 哔哩哔哩 runs with the hook: pop the menu up at the
+        // pointer (the menu bar icon can end up hidden behind the notch). Otherwise (re)start 哔哩哔哩.
+        if hooked { popUpMenu() } else { Task { await startBili() } }
         return false
     }
 
-    var settingsWindow: NSWindow?
-
-    @objc func showSettings() {
-        if settingsWindow == nil {
-            let view = SettingsView(status: { [weak self] in self?.statusText() ?? "" })
-            let w = NSWindow(contentViewController: NSHostingController(rootView: view))
-            w.title = "B站加速"
-            w.styleMask = [.titled, .closable]
-            w.isReleasedWhenClosed = false
-            w.center()
-            settingsWindow = w
-        }
+    func popUpMenu() {
+        let menu = NSMenu()
+        fillMenu(menu)
         NSApp.activate(ignoringOtherApps: true)
-        settingsWindow?.makeKeyAndOrderFront(nil)
+        log("menu popped up")
+        menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
+        log("menu closed")
+    }
+
+    func menuNeedsUpdate(_ menu: NSMenu) { fillMenu(menu) }
+
+    func fillMenu(_ menu: NSMenu) {
+        menu.removeAllItems()
+        let cfg = readConfig()
+        let status = NSMenuItem(title: statusText(), action: nil, keyEquivalent: "")
+        status.isEnabled = false
+        menu.addItem(status)
+        menu.addItem(.separator())
+        for n in nodes {
+            let item = NSMenuItem(title: n.label, action: #selector(pickNode(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = n.host
+            item.state = cfg.enabled && cfg.target == n.host ? .on : .off
+            menu.addItem(item)
+        }
+        let off = NSMenuItem(title: "暂停（用 B 站默认节点）", action: #selector(pickNode(_:)), keyEquivalent: "")
+        off.target = self
+        off.state = cfg.enabled ? .off : .on
+        menu.addItem(off)
+    }
+
+    @objc func pickNode(_ sender: NSMenuItem) {
+        var cfg = readConfig()
+        if let host = sender.representedObject as? String { cfg.target = host; cfg.enabled = true }
+        else { cfg.enabled = false }
+        writeConfig(cfg) // the hook watches this file; takes effect without a restart
     }
 
     func statusText() -> String {
@@ -194,9 +213,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func startBili() async {
         if let app = runningBili {
             if hooked {
-                // Already accelerated (e.g. the launcher was quit and reopened): show the settings.
+                // Already accelerated (e.g. the launcher was quit and reopened): show the menu.
                 biliPID = app.processIdentifier
-                showSettings()
+                popUpMenu()
                 return
             }
             // Opened without the hook (e.g. from its own Dock icon): offer to restart it.
@@ -263,67 +282,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.button?.image = NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: "B站加速出错")
     }
 
-}
-
-// MARK: - Settings window
-
-struct SettingsView: View {
-    let status: () -> String
-    @State private var cfg = readConfig()
-    @State private var statusLine = ""
-    private let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
-
-    private var choice: Binding<String> {
-        Binding(
-            get: { cfg.enabled ? cfg.target : "off" },
-            set: { v in
-                if v == "off" { cfg.enabled = false } else { cfg.target = v; cfg.enabled = true }
-                writeConfig(cfg) // the hook watches this file; takes effect without a restart
-                statusLine = status()
-            })
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(statusLine).font(.headline)
-            Picker("视频节点", selection: choice) {
-                ForEach(nodes, id: \.host) { Text($0.label).tag($0.host) }
-                Text("暂停（用 B 站默认节点）").tag("off")
-            }
-            .pickerStyle(.radioGroup)
-            Text("切换节点立即生效，不用重启。关闭哔哩哔哩时 B站加速 会自动退出。")
-                .font(.caption).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(20)
-        .frame(width: 360)
-        .onAppear { cfg = readConfig(); statusLine = status() }
-        .onReceive(timer) { _ in statusLine = status() }
-    }
-}
-
-/// `BiliCDN --snapshot out.png ["status line"]`: renders the settings window to a PNG
-/// (used for the README screenshot; needs no screen-recording permission).
-func renderSnapshot(to path: String, status: String) {
-    _ = NSApplication.shared
-    NSApp.appearance = NSAppearance(named: .aqua)
-    let host = NSHostingView(rootView: SettingsView(status: { status }))
-    host.frame = NSRect(origin: .zero, size: host.fittingSize)
-    let window = NSWindow(contentRect: host.frame, styleMask: [.titled, .closable], backing: .buffered, defer: false)
-    window.title = "B站加速"
-    window.contentView = host
-    host.layoutSubtreeIfNeeded()
-    RunLoop.main.run(until: Date().addingTimeInterval(0.5)) // let SwiftUI settle
-    guard let frameView = host.superview,
-          let rep = frameView.bitmapImageRepForCachingDisplay(in: frameView.bounds) else { exit(1) }
-    frameView.cacheDisplay(in: frameView.bounds, to: rep)
-    try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
-}
-
-if let i = CommandLine.arguments.firstIndex(of: "--snapshot"), i + 1 < CommandLine.arguments.count {
-    let status = i + 2 < CommandLine.arguments.count ? CommandLine.arguments[i + 2] : "已加速 · 已转到国内节点 663 次"
-    renderSnapshot(to: CommandLine.arguments[i + 1], status: status)
-    exit(0)
 }
 
 let app = NSApplication.shared
